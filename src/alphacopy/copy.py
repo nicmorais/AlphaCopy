@@ -33,10 +33,12 @@ def show_mounted_disks():
         deviceInfo.append(tipo)
         deviceInfo.append(str(usado))
         deviceInfo.append(str(livre))
-        listDevices.append(deviceInfo)
-        print("Nome: " + deviceInfo[0] + " Dispositivo: " + deviceInfo[1] + " Tipo: " + deviceInfo[2] + " Usado: " + deviceInfo[3] + " Livre: " + deviceInfo[4])
 
-        return listDevices
+        if(tipo == 'vfat' or tipo == 'fuseblk'):
+            listDevices.append(deviceInfo)
+            #print("Nome: " + deviceInfo[0] + " Dispositivo: " + deviceInfo[1] + " Tipo: " + deviceInfo[2] + " Usado: " + deviceInfo[3] + " Livre: " + deviceInfo[4])
+
+    return listDevices
 
 def show_devices():
     path = "/media/pi/"
