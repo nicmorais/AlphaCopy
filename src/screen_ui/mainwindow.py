@@ -1,8 +1,10 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, QThreadPool, pyqtSlot
 from alphacopy.devicesutil import DevicesUtil
+from alphacopy.copyworker import CopyWorker
+from alphacopy.copywaiter import CopyWaiter
 
 
 class MainWindow(QMainWindow):
@@ -21,6 +23,7 @@ class MainWindow(QMainWindow):
         self.sdIconLb.setPixmap(sdIcon.scaled(QSize(64, 64)))
         self.stackedWidget.setCurrentIndex(0)
 
+    @pyqtSlot()
     def scan(self):
         disks = self.devices.list_disks()
         if len(disks) > 0:
@@ -47,7 +50,19 @@ class MainWindow(QMainWindow):
             self.notFoundDescriptionLb.setText(errorMessage)
             self.stackedWidget.setCurrentIndex(1)
 
+    def incrementProgressBar(self):
+        currentValue = self.copyProgrB.value()
+        self.copyProgrB.setValue(currentValue + 1)
+
+    @pyqtSlot()
+    def setProgressBar(self, value):
+        print("setProgressBar", value)
+        self.copyProgrB.setValue(value)
+
+    @pyqtSlot()
     def copy(self):
+        devices = DevicesUtil()
+
         self.stackedWidget.setCurrentIndex(3)
         sd_path = self.devices.volumes_path + '/' + self.sd_label
         hdd_path = self.devices.volumes_path + '/' + self.hdd_label
@@ -55,28 +70,29 @@ class MainWindow(QMainWindow):
             total_files = len(self.devices.list_files(sd_path))
         except Exception:
             self.stackedWidget.setCurrentIndex(5)
-            return
+
         self.copyProgrB.setMaximum(total_files)
 
-        def incrementProgressBar():
-            currentValue = self.copyProgrB.value()
-            self.copyProgrB.setValue(currentValue + 1)
+        self.worker = CopyWorker()
+        self.waiter = CopyWaiter()
+        self.waiter.src = "/media/nicolas/SD32"
+        self.waiter.dest = devices.make_dir(hdd_path)
+        self.waiter.signal.copied_changed.connect(lambda val: self.copyProgrB.setValue(val))
+#        self.threadpool = QThreadPool()
+#        self.threadpool.start(self.worker)
+#        self.threadpool.start(self.waiter)
+        self.worker.start()
+        self.waiter.start()
 
-        files = self.devices.list_files(sd_path)
-
-        self.devices.file_copied.connect(incrementProgressBar)
-        #try:
-        self.devices.copy_files(files, hdd_path)
-        #except Exception:
-        self.stackedWidget.setCurrentIndex(5)
-        self.stackedWidget.setCurrentIndex(4)
-
+    @pyqtSlot()
     def done(self):
         self.stackedWidget.setCurrentIndex(6)
 
+    @pyqtSlot()
     def eject(self):
         self.devices.eject_disk(self.sd_label)
         self.stackedWidget.setCurrentIndex(0)
 
+    @pyqtSlot()
     def abort_copy(self):
         pass

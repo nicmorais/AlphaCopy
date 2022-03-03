@@ -1,7 +1,7 @@
 import os
 import shutil
 import psutil
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from datetime import datetime
 from humanize import naturalsize
 from pathlib import Path
@@ -50,6 +50,10 @@ class DevicesUtil(QObject):
             else:
                 path.mkdir(exist_ok=True)
 
+    def copytree(self, src, dest):
+        dest = self.make_dir(dest)
+        shutil.copytree(src, dest, dirs_exist_ok=True)
+
     # Creates a new directory in the target disk with current date and hour
     # by @ozzysp, with later modifications by @nicmorais
     def make_dir(self, base_path):
@@ -57,7 +61,7 @@ class DevicesUtil(QObject):
         dt_string = now.strftime('%Y_%m_%d_%H-%M-%S')
         os.chdir(base_path)
         new_folder = dt_string
-        os.mkdir(base_path + '/' + new_folder)
+        #os.mkdir(base_path + '/' + new_folder)
         return base_path + '/' + new_folder
 
     # Ejects disk by label (by @nicmorais)
@@ -80,3 +84,14 @@ class DevicesUtil(QObject):
         free_bytes: str = free_space[:3]
         info_free = (free_bytes + ' GB Free')
         return info_free
+
+    def get_size(self, start_path):
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(start_path):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                # skip if it is symbolic link
+                if not os.path.islink(fp):
+                    total_size += os.path.getsize(fp)
+
+        return total_size // (2 ** 10)

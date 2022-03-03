@@ -1,5 +1,6 @@
 {
     "files": ["screen_ui/mainwindow2.ui",
               "screen_ui/mainwindow.ui", "screen_ui/mainwindow.py",
-              "main.py", "alphacopy/devicesutil.py"]
+              "main.py", "alphacopy/devicesutil.py",
+              "alphacopy/copyworker.py", "alphacopy/copywaiter.py"]
 }
